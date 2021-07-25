@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+  proxy:
+    image: traefik
+    container_name: traefik_proxy
+    networks:
+      - webgateway
+    ports:
+      - "80:80"
+      - "8081:8080"
+    volumes:
+      - /run/user/1000/docker.sock:/var/run/docker.sock
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      - ./logs/:/var/log/traefik/
+    restart: always
+
+networks:
+  webgateway:
+    driver: bridge

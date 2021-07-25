@@ -1,0 +1,46 @@
+#version: '3.3'
+version: '2.1'
+
+services:
+  fpm:
+    image: rhamdeew/docker-php-8-fpm-alpine:latest
+    container_name: mono_service_fpm
+    env_file: ./env.conf
+    restart: "no"
+    ports:
+      - 9000:9000
+    volumes:
+      - ../:/code/:delegated
+      - ./php/entrypoint.sh:/code/docker/php/entrypoint.sh
+    environment:
+      XDEBUG_CONFIG: "remote_host=host.docker.internal remote_enable=1"
+      PHP_IDE_CONFIG: serverName=MONO_APPLICATION
+    entrypoint: /code/docker/php/entrypoint.sh
+    working_dir: /code
+    networks:
+      - default
+
+  nginx:
+    image: nginx:latest
+    container_name: mono_service_nginx
+    env_file: ./env.conf
+    depends_on:
+      - fpm
+    volumes_from:
+      - fpm:ro
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    restart: always
+    labels:
+      traefik.enable: true
+      traefik.http.routers.mono_service_nginx.rule: Host(`mono.service.localhost`)
+    networks:
+      - default
+      - proxy
+
+networks:
+  default:
+    driver: bridge
+  proxy:
+    external:
+      name: traefik_webgateway
